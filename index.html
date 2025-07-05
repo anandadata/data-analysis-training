@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Data Analysis Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals with Slate Blue/Teal Accent -->
+    <!-- Application Structure Plan: The SPA is designed as an interactive learning module with a top navigation bar for non-linear exploration. It is divided into four main thematic sections: 1) An interactive calculator for Central Tendency (Mean, Median, Mode). 2) A similar calculator for Dispersion (Range, Variance, Std. Dev.). 3) A visual demonstration of Data Distributions using a dynamic Chart.js histogram. 4) A "Playground" section applying all concepts to real-world datasets. This structure was chosen to transform passive slide content into an active, hands-on learning experience, which is more effective for understanding statistical concepts than a linear presentation. -->
+    <!-- Visualization & Content Choices: 
+        - Central Tendency/Dispersion: Report info on Mean, Median, Mode, Range, etc. -> Goal: Inform/Compare -> Viz: Interactive calculator with info cards -> Interaction: User inputs numbers, stats update instantly -> Justification: Active calculation is more engaging than static examples. (HTML/CSS/JS)
+        - Data Distribution/Skewness: Report info on distribution shapes -> Goal: Compare/Change -> Viz: Chart.js Bar Chart (Histogram) -> Interaction: Buttons to switch between Normal, Positive, and Negative skew datasets redraw the chart -> Justification: Visually demonstrates abstract concepts effectively. (Chart.js)
+        - Practical Applications: Report info on real-world examples -> Goal: Synthesize/Relate -> Viz: A dashboard with key stat cards and a Chart.js histogram -> Interaction: User selects a scenario (Sales, Salaries) to update the entire dashboard -> Justification: Connects abstract theory to practical application, which is the report's ultimate goal. (Chart.js/JS)
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 48rem; /* max-w-2xl */
+            margin-left: auto;
+            margin-right: auto;
+            height: 18rem; /* h-72 */
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 24rem; /* md:h-96 */
+            }
+        }
+        .stat-card {
+            background-color: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 1px solid #e5e7eb;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
+        }
+        .nav-link {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            transition: background-color 0.2s;
+            font-weight: 500;
+        }
+        .nav-link:hover {
+            background-color: #e0f2f1;
+        }
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        .btn-primary {
+            background-color: #00796b; /* teal-700 */
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #00695c; /* teal-800 */
+        }
+        .btn-secondary {
+            background-color: #f0f4f8;
+            color: #334155;
+            border-color: #cbd5e1;
+        }
+        .btn-secondary:hover {
+            background-color: #e2e8f0;
+        }
+         .btn-secondary.active {
+            background-color: #00796b;
+            color: white;
+            border-color: #00796b;
+        }
+    </style>
+</head>
+<body class="bg-stone-50 text-slate-800">
+
+    <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 border-b border-stone-200">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
+            <a href="#" class="font-bold text-xl text-teal-700">DataExplorer</a>
+            <div class="hidden md:flex items-center space-x-2">
+                <a href="#introduction" class="nav-link text-slate-600">Introduction</a>
+                <a href="#tendency" class="nav-link text-slate-600">Central Tendency</a>
+                <a href="#dispersion" class="nav-link text-slate-600">Dispersion</a>
+                <a href="#distribution" class="nav-link text-slate-600">Distribution</a>
+                <a href="#playground" class="nav-link text-slate-600">Playground</a>
+            </div>
+            <button id="mobile-menu-button" class="md:hidden text-slate-600">
+                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+            </button>
+        </nav>
+        <div id="mobile-menu" class="hidden md:hidden px-4 pb-4 space-y-2">
+             <a href="#introduction" class="block nav-link text-slate-600">Introduction</a>
+             <a href="#tendency" class="block nav-link text-slate-600">Central Tendency</a>
+             <a href="#dispersion" class="block nav-link text-slate-600">Dispersion</a>
+             <a href="#distribution" class="block nav-link text-slate-600">Distribution</a>
+             <a href="#playground" class="block nav-link text-slate-600">Playground</a>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        
+        <section id="introduction" class="text-center mb-16 md:mb-24">
+            <h1 class="text-4xl md:text-5xl font-bold text-slate-900 mb-4">Making Sense of the Numbers</h1>
+            <p class="max-w-3xl mx-auto text-lg text-slate-600">
+                Welcome to the Interactive Data Analysis Explorer. This application translates the core concepts of summary statistics into a hands-on experience. Instead of just reading about statistics, you'll calculate and visualize them yourself to build a stronger, more intuitive understanding of how data works.
+            </p>
+        </section>
+
+        <section id="tendency" class="mb-16 md:mb-24">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-slate-900 mb-2">Measures of Central Tendency</h2>
+                <p class="max-w-2xl mx-auto text-slate-600">This section helps you find the "center" of your data. Enter a list of comma-separated numbers below to see the mean, median, and mode calculated instantly. These statistics describe the typical or central value in a dataset.</p>
+            </div>
+            <div class="max-w-3xl mx-auto mb-8">
+                <label for="data-input" class="block text-md font-medium text-slate-700 mb-2">Enter your data (comma-separated):</label>
+                <input type="text" id="data-input" class="w-full p-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500" placeholder="e.g., 5, 7, 8, 10, 12, 8">
+            </div>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="stat-card">
+                    <h3 class="font-bold text-xl text-slate-800 mb-2">Mean (Average)</h3>
+                    <p id="mean-value" class="text-4xl font-bold text-teal-600 mb-4">-</p>
+                    <p class="text-sm text-slate-500">The sum of all values divided by the count of values. It's a common measure but can be heavily skewed by extreme values (outliers).</p>
+                </div>
+                <div class="stat-card">
+                    <h3 class="font-bold text-xl text-slate-800 mb-2">Median (Middle Value)</h3>
+                    <p id="median-value" class="text-4xl font-bold text-teal-600 mb-4">-</p>
+                    <p class="text-sm text-slate-500">The middle value of a dataset when it's sorted in order. If there's an even number of values, it's the average of the two middle ones. It's resistant to outliers.</p>
+                </div>
+                <div class="stat-card">
+                    <h3 class="font-bold text-xl text-slate-800 mb-2">Mode (Most Frequent)</h3>
+                    <p id="mode-value" class="text-4xl font-bold text-teal-600 mb-4">-</p>
+                    <p class="text-sm text-slate-500">The value that appears most often in the dataset. A dataset can have one mode, more than one, or no mode at all.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="dispersion" class="mb-16 md:mb-24">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-slate-900 mb-2">Measures of Dispersion</h2>
+                <p class="max-w-2xl mx-auto text-slate-600">This section shows how "spread out" your data is. The same numbers you entered above are used to calculate the range, variance, and standard deviation, which describe the variability in the dataset.</p>
+            </div>
+             <div class="grid md:grid-cols-3 gap-6">
+                <div class="stat-card">
+                    <h3 class="font-bold text-xl text-slate-800 mb-2">Range</h3>
+                    <p id="range-value" class="text-4xl font-bold text-purple-600 mb-4">-</p>
+                    <p class="text-sm text-slate-500">The simplest measure of spread, calculated as the difference between the maximum and minimum values in the dataset.</p>
+                </div>
+                <div class="stat-card">
+                    <h3 class="font-bold text-xl text-slate-800 mb-2">Variance</h3>
+                    <p id="variance-value" class="text-4xl font-bold text-purple-600 mb-4">-</p>
+                    <p class="text-sm text-slate-500">The average of the squared differences from the Mean. A larger variance means the data points are more spread out.</p>
+                </div>
+                <div class="stat-card">
+                    <h3 class="font-bold text-xl text-slate-800 mb-2">Standard Deviation</h3>
+                    <p id="stdev-value" class="text-4xl font-bold text-purple-600 mb-4">-</p>
+                    <p class="text-sm text-slate-500">The square root of the variance. It's the most common measure of spread and is expressed in the same units as the data.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="distribution" class="mb-16 md:mb-24">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-slate-900 mb-2">Understanding Data Distribution</h2>
+                <p class="max-w-2xl mx-auto text-slate-600">Summary statistics are powerful, but a visualization can reveal the 'shape' of your data. Use the buttons below to explore different types of distributions. Notice how the shape changes and what that implies about the data.</p>
+            </div>
+            <div class="text-center mb-8 space-x-2">
+                <button class="btn btn-secondary active" data-dist="normal">Normal</button>
+                <button class="btn btn-secondary" data-dist="positive-skew">Positive Skew</button>
+                <button class="btn btn-secondary" data-dist="negative-skew">Negative Skew</button>
+            </div>
+            <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg border border-stone-200">
+                <div class="chart-container">
+                    <canvas id="distribution-chart"></canvas>
+                </div>
+                <p id="distribution-text" class="text-center mt-4 text-slate-600"></p>
+            </div>
+        </section>
+
+        <section id="playground" class="mb-16 md:mb-24">
+             <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-slate-900 mb-2">Real-World Playground</h2>
+                <p class="max-w-2xl mx-auto text-slate-600">Let's apply these concepts to real-world scenarios. Select a dataset below to see its summary statistics and distribution. This will help you understand why choosing the right statistic is crucial for accurate interpretation.</p>
+            </div>
+             <div class="text-center mb-8 space-x-2">
+                <button class="btn btn-secondary active" data-scenario="salaries">Employee Salaries</button>
+                <button class="btn btn-secondary" data-scenario="csat">CSAT Scores</button>
+                <button class="btn btn-secondary" data-scenario="sales">Daily Sales</button>
+            </div>
+            <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg border border-stone-200">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2">
+                         <div class="chart-container">
+                            <canvas id="playground-chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-1 flex flex-col justify-center">
+                        <h3 id="playground-title" class="font-bold text-2xl text-slate-800 mb-4"></h3>
+                        <p id="playground-text" class="text-slate-600 mb-6"></p>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-baseline">
+                                <span class="font-medium text-slate-500">Mean:</span>
+                                <span id="pg-mean" class="font-bold text-xl text-teal-600">-</span>
+                            </div>
+                            <div class="flex justify-between items-baseline">
+                                <span class="font-medium text-slate-500">Median:</span>
+                                <span id="pg-median" class="font-bold text-xl text-teal-600">-</span>
+                            </div>
+                             <div class="flex justify-between items-baseline">
+                                <span class="font-medium text-slate-500">Std. Deviation:</span>
+                                <span id="pg-stdev" class="font-bold text-xl text-purple-600">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-slate-800 text-slate-300 py-6">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p>&copy; 2025 DataExplorer. An interactive learning tool.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // Mobile Menu
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+            document.querySelectorAll('#mobile-menu a').forEach(link => {
+                link.addEventListener('click', () => mobileMenu.classList.add('hidden'));
+            });
+
+            // Statistical Calculation Functions
+            const calc = {
+                mean: arr => arr.length === 0 ? 0 : arr.reduce((a, b) => a + b, 0) / arr.length,
+                median: arr => {
+                    if (arr.length === 0) return 0;
+                    const sorted = [...arr].sort((a, b) => a - b);
+                    const mid = Math.floor(sorted.length / 2);
+                    return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+                },
+                mode: arr => {
+                    if (arr.length === 0) return 'N/A';
+                    const modeMap = {};
+                    let maxCount = 0;
+                    let modes = [];
+                    arr.forEach(el => {
+                        modeMap[el] = (modeMap[el] || 0) + 1;
+                        if (modeMap[el] > maxCount) {
+                            maxCount = modeMap[el];
+                            modes = [el];
+                        } else if (modeMap[el] === maxCount) {
+                            modes.push(el);
+                        }
+                    });
+                    if (maxCount <= 1 && arr.length > 1) return 'None';
+                    return [...new Set(modes)].join(', ');
+                },
+                range: arr => arr.length === 0 ? 0 : Math.max(...arr) - Math.min(...arr),
+                variance: arr => {
+                    if (arr.length < 2) return 0;
+                    const m = calc.mean(arr);
+                    return arr.reduce((acc, val) => acc + Math.pow(val - m, 2), 0) / (arr.length - 1);
+                },
+                stdev: arr => Math.sqrt(calc.variance(arr))
+            };
+
+            const dataInput = document.getElementById('data-input');
+
+            function updateCalculations() {
+                const rawText = dataInput.value.trim();
+                if (rawText === '') {
+                     resetStatCards();
+                     return;
+                }
+                const numbers = rawText.split(',')
+                    .map(s => parseFloat(s.trim()))
+                    .filter(n => !isNaN(n));
+
+                document.getElementById('mean-value').textContent = calc.mean(numbers).toFixed(2);
+                document.getElementById('median-value').textContent = calc.median(numbers).toFixed(2);
+                document.getElementById('mode-value').textContent = calc.mode(numbers);
+                document.getElementById('range-value').textContent = calc.range(numbers).toFixed(2);
+                document.getElementById('variance-value').textContent = calc.variance(numbers).toFixed(2);
+                document.getElementById('stdev-value').textContent = calc.stdev(numbers).toFixed(2);
+            }
+            
+            function resetStatCards() {
+                 ['mean-value', 'median-value', 'mode-value', 'range-value', 'variance-value', 'stdev-value'].forEach(id => {
+                    document.getElementById(id).textContent = '-';
+                });
+            }
+
+            dataInput.addEventListener('input', updateCalculations);
+            dataInput.value = '5, 7, 8, 10, 12, 8, 4, 9, 8, 15';
+            updateCalculations();
+
+            // Distribution Chart
+            const distDatasets = {
+                normal: {
+                    data: [5, 15, 40, 60, 40, 15, 5],
+                    labels: ['40-50', '50-60', '60-70', '70-80', '80-90', '90-100', '100-110'],
+                    text: 'A normal distribution (or bell curve) is symmetric. The mean, median, and mode are all equal and located at the center.'
+                },
+                'positive-skew': {
+                    data: [60, 40, 20, 10, 5, 2, 1],
+                    labels: ['0-10', '10-20', '20-30', '30-40', '40-50', '50-60', '60-70'],
+                    text: 'In a positively skewed distribution, the long tail is on the right. The mean is greater than the median. This often occurs with data like income.'
+                },
+                'negative-skew': {
+                    data: [1, 2, 5, 10, 20, 40, 60],
+                    labels: ['30-40', '40-50', '50-60', '60-70', '70-80', '80-90', '90-100'],
+                    text: 'In a negatively skewed distribution, the long tail is on the left. The mean is less than the median. This can happen with test scores where most students do well.'
+                }
+            };
+            
+            const distCtx = document.getElementById('distribution-chart').getContext('2d');
+            let distChart = new Chart(distCtx, {
+                type: 'bar',
+                data: {
+                    labels: distDatasets.normal.labels,
+                    datasets: [{
+                        label: 'Frequency',
+                        data: distDatasets.normal.data,
+                        backgroundColor: 'rgba(0, 121, 107, 0.6)',
+                        borderColor: 'rgba(0, 121, 107, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, title: { display: true, text: 'Frequency'} }, x: { title: { display: true, text: 'Value Bins'} } }
+                }
+            });
+            document.getElementById('distribution-text').textContent = distDatasets.normal.text;
+
+            document.querySelectorAll('[data-dist]').forEach(button => {
+                button.addEventListener('click', e => {
+                    document.querySelectorAll('[data-dist]').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    const distType = e.target.dataset.dist;
+                    distChart.data.labels = distDatasets[distType].labels;
+                    distChart.data.datasets[0].data = distDatasets[distType].data;
+                    distChart.update();
+                    document.getElementById('distribution-text').textContent = distDatasets[distType].text;
+                });
+            });
+
+            // Playground Chart
+            function createBins(data, binSize) {
+                if (data.length === 0) return { labels: [], counts: [] };
+                const min = Math.min(...data);
+                const max = Math.max(...data);
+                const labels = [];
+                const counts = [];
+
+                for (let i = Math.floor(min / binSize) * binSize; i <= max; i += binSize) {
+                    const binEnd = i + binSize;
+                    labels.push(`${i}-${binEnd}`);
+                    counts.push(data.filter(d => d >= i && d < binEnd).length);
+                }
+                return { labels, counts };
+            }
+
+            const playgroundData = {
+                salaries: {
+                    title: 'Employee Salaries (in thousands)',
+                    text: "Notice the positive skew. The median is a better measure of a 'typical' salary than the mean, which is pulled higher by a few very large salaries (outliers).",
+                    data: [45, 55, 60, 50, 65, 70, 48, 52, 68, 75, 80, 58, 62, 250],
+                    binSize: 20
+                },
+                csat: {
+                    title: 'Customer Satisfaction Scores (1-5)',
+                    text: 'This data is negatively skewed. Most customers are satisfied (scores of 4 and 5), so the mean is pulled down by a few unhappy customers. The mode is very useful here.',
+                    data: [5, 4, 5, 5, 4, 3, 5, 4, 5, 1, 5, 4, 5, 2, 4, 5, 5],
+                    binSize: 1
+                },
+                sales: {
+                    title: 'Daily Sales Units',
+                    text: 'This data has a relatively normal distribution. The mean and median are close, indicating a symmetric spread. The standard deviation helps understand the daily sales consistency.',
+                    data: [102, 110, 98, 105, 120, 95, 100, 115, 108, 99, 112, 103, 97, 118],
+                    binSize: 5
+                }
+            };
+            const pgCtx = document.getElementById('playground-chart').getContext('2d');
+            let pgChart = new Chart(pgCtx, { type: 'bar', options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Frequency'} }, x: { title: { display: true, text: 'Value Bins'} } } } });
+
+            function updatePlayground(scenario) {
+                const { title, text, data, binSize } = playgroundData[scenario];
+                document.getElementById('playground-title').textContent = title;
+                document.getElementById('playground-text').textContent = text;
+                
+                document.getElementById('pg-mean').textContent = calc.mean(data).toFixed(2);
+                document.getElementById('pg-median').textContent = calc.median(data).toFixed(2);
+                document.getElementById('pg-stdev').textContent = calc.stdev(data).toFixed(2);
+
+                const { labels, counts } = createBins(data, binSize);
+                pgChart.data = {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Frequency',
+                        data: counts,
+                        backgroundColor: 'rgba(126, 87, 194, 0.6)',
+                        borderColor: 'rgba(126, 87, 194, 1)',
+                        borderWidth: 1
+                    }]
+                };
+                pgChart.update();
+            }
+
+            document.querySelectorAll('[data-scenario]').forEach(button => {
+                button.addEventListener('click', e => {
+                    document.querySelectorAll('[data-scenario]').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    const scenarioType = e.target.dataset.scenario;
+                    updatePlayground(scenarioType);
+                });
+            });
+            
+            updatePlayground('salaries');
+        });
+    </script>
+</body>
+</html>
